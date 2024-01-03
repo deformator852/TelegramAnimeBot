@@ -1,8 +1,19 @@
-from aiogram.utils import executor
-from create_bot import dp
-from handlers import anime_list
+import logging
+import asyncio
+import sys
 
-anime_list.register_handlers_anime_list(dp)
-if __name__ == '__main__':
-    executor.start_polling(skip_updates=True,dispatcher=dp)
+from aiogram.filters.callback_data import CallbackData
+from create_bot import dp,bot 
+from routers import bot_routers
 
+async def main():
+    cb = CallbackData()
+    dp.include_router(bot_routers.router)
+    await dp.start_polling(bot)
+
+
+
+if __name__ == "__main__":
+    print("work")
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    asyncio.run(main())
