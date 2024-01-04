@@ -1,9 +1,11 @@
-from aiogram import Bot, Dispatcher, Router
+from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 import os
 import sqlite3
 
-TOKEN = "6603101405:AAGSTkBKgjuzxzTFE7GYUYJhp7zZXXOFrIU"
-bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
-dp = Dispatcher()
-data_base = sqlite3.connect(os.path.join(os.getcwd(),"database","anime.db"))
+TOKEN = ""
+bot: Bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
+dp: Dispatcher = Dispatcher()
+data_base: sqlite3.Connection = sqlite3.connect(
+    os.path.join(os.getcwd(), "database", "anime.db")
+)

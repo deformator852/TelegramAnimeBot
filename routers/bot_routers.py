@@ -1,25 +1,20 @@
+import os
+from typing import List, Tuple
 from aiogram.types.callback_query import CallbackQuery
+from aiogram.types.input_file import FSInputFile
 from create_bot import bot, data_base, dp
 from aiogram import types
 from aiogram import F
 from aiogram import Router
 from keyboards.anime_bot_keyboards import Keyboards
 from aiogram.filters.command import Command
+from aiogram.utils.media_group import MediaGroupBuilder
 import re
 import sqlite3
 
 router = Router()
-con: sqlite3.Cursor = data_base.cursor()
+cur: sqlite3.Cursor = data_base.cursor()
 keyboards: Keyboards = Keyboards()
-
-
-async def take_info(message, ID):
-    anime_list = con.execute(f"SELECT name,content,images FROM anime WHERE ID = {ID} ")
-    for anime in anime_list:
-        await bot.send_message(message.from_user.id, "Name: " + anime[0])
-        await bot.send_message(message.from_user.id, anime[1])
-        await bot.send_photo(message.from_user.id, types.InputFile(anime[2]))
-        return
 
 
 @router.message(Command("start"))
@@ -32,7 +27,9 @@ async def command_start(message: types.Message) -> None:
 
 @router.message(Command("Output_the_anime_list"))
 async def command_output_anime_list(message: types.Message) -> None:
-    anime_list = con.execute("SELECT name,genre FROM anime")
+    anime_list: List[Tuple[str, str]] = cur.execute(
+        "SELECT name,genre FROM anime"
+    ).fetchall()
     for anime in anime_list:
         await message.answer("Name: " + anime[0] + " | Genre: " + anime[1])
 
@@ -45,32 +42,44 @@ async def command_anime_info(message: types.Message) -> None:
 
 
 @router.message(Command("AnimeByReleaseDate"))
-async def command_Anime_ByReleaseDate(message: types.Message):
-    data = con.execute("SELECT data_release,name FROM anime")
-    data = list(data)
-    data.sort()
-    for d in data:
-        await bot.send_message(message.from_user.id, d[1] + " — " + d[0])
+async def command_Anime_ByReleaseDate(message: types.Message) -> None:
+    anime_by_release_date = cur.execute(
+        "SELECT data_release,name FROM anime"
+    ).fetchall()
+    anime_by_release_date.sort()
+    for anime in anime_by_release_date:
+        await bot.send_message(message.from_user.id, anime[1] + " — " + anime[0])
 
 
 @router.message(Command("BackMenu"))
-async def command_BackMenu(message: types.Message):
+async def command_BackMenu(message: types.Message) -> None:
     await bot.send_message(
         message.from_user.id, "⁠", reply_markup=await keyboards.kb_bot()
     )  # pyright:ignore
 
 
 @router.message(Command("Shonen"))
-async def command_Shonen(message: types.Message):
-    data = con.execute(r"SELECT name,genre FROM anime")
-    for d in data:
-        if re.search(r"[Ss]honen", d[1]):
-            await bot.send_message(message.from_user.id, d[0])
+async def command_Shonen(message: types.Message) -> None:
+    senen_anime = cur.execute(r"SELECT name,genre FROM anime").fetchall()
+    for anime in senen_anime:
+        if re.search(r"[Ss]honen", anime[1]):
+            await bot.send_message(message.from_user.id, anime[0])
 
 
 @router.callback_query(F.data.startswith("anime_"))
-async def command_anime_list(callback_query: CallbackQuery):
-    anime = con.execute(f"SELECT * FROM anime WHERE name='{callback_query.data[6:]}'").fetchall()
-    if anime:
-        await callback_query.message.answer(anime[0][1])
+async def command_anime_list(callback_query: CallbackQuery) -> None:
+    anime_name: str = callback_query.data[6:]
+    anime: List[Tuple[int, str, str, int, str]] = cur.execute(
+        "SELECT * FROM anime WHERE name=?", (anime_name,)
+    ).fetchall()
 
+    if anime:
+        media_group: MediaGroupBuilder = MediaGroupBuilder()
+        anime_directory: str = anime[0][5]
+
+        for image in os.listdir(anime_directory):
+            image_path: str = os.path.join(anime_directory, image)
+            media_group.add(
+                type="photo", media=FSInputFile(os.path.join(anime_directory, image))
+            )
+        await callback_query.message.answer_media_group(media=media_group.build())
