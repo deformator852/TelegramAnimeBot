@@ -14,11 +14,17 @@ async def take_anime_names() -> List[Tuple[str]]:
 
 class Keyboards:
     @staticmethod
+    async def kb_admin() -> ReplyKeyboardMarkup:
+        builder: ReplyKeyboardBuilder = ReplyKeyboardBuilder()
+        builder.button(text="/Add new anime")
+        return builder.as_markup()
+
+    @staticmethod
     async def kb_bot() -> ReplyKeyboardMarkup:
         builder: ReplyKeyboardBuilder = ReplyKeyboardBuilder()
-        builder.button(text="/Anime_info")
-        builder.button(text="/Output_the_anime_list")
-        builder.button(text="/AnimeByReleaseDate")
+        builder.button(text="/Anime list")
+        builder.button(text="/Anime list by genres")
+        builder.button(text="/Anime by release date")
         builder.button(text="/Shonen")
 
         builder.adjust(1)
